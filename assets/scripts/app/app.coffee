@@ -1,3 +1,7 @@
+Adapter = Ember.RESTAdapter.extend
+  ajax: (url, params, method) ->
+    Travis.ajax.ajax(url, method || 'get', data: params)
+
 unless window.TravisApplication
   window.TravisApplication = Em.Application.extend(Ember.Evented,
     LOG_TRANSITIONS: true
@@ -5,10 +9,18 @@ unless window.TravisApplication
     signedIn: (-> @get('authState') == 'signed-in' ).property('authState')
 
     setup: ->
-      @store = Travis.Store.create(
-        adapter: Travis.RestAdapter.create()
-      )
-      @store.loadMany(Travis.Sponsor, Travis.SPONSORS)
+      modelClasses = [Travis.User, Travis.Build, Travis.Job, Travis.Repo]
+      modelClasses.forEach (klass) ->
+        klass.adapter = Adapter.create()
+
+      Travis.User.url = '/users'
+      Travis.Build.url = '/builds'
+      Travis.Job.url = '/jobs'
+      Travis.Repo.url = '/repos'
+      Travis.Build.url = '/builds'
+
+      # TODO: fix
+      #@store.loadMany(Travis.Sponsor, Travis.SPONSORS)
 
       @slider = new Travis.Slider()
       @pusher = new Travis.Pusher(Travis.config.pusher_key) if Travis.config.pusher_key
@@ -36,7 +48,8 @@ unless window.TravisApplication
       @get('auth').signOut()
 
     receive: ->
-      @store.receive.apply(@store, arguments)
+      # TODO: fix
+      #@store.receive.apply(@store, arguments)
 
     toggleSidebar: ->
       $('body').toggleClass('maximized')

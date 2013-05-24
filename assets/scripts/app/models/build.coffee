@@ -1,25 +1,25 @@
 require 'travis/model'
 
 @Travis.Build = Travis.Model.extend Travis.DurationCalculations,
-  eventType:        DS.attr('string')
-  repoId:           DS.attr('number')
-  commitId:         DS.attr('number')
+  eventType:        Ember.attr('string')
+  repoId:           Ember.attr('number')
+  commitId:         Ember.attr('number')
 
-  state:            DS.attr('string')
-  number:           DS.attr('number')
-  branch:           DS.attr('string')
-  message:          DS.attr('string')
-  _duration:        DS.attr('number')
-  _config:          DS.attr('object')
-  startedAt:        DS.attr('string')
-  finishedAt:       DS.attr('string')
-  pullRequest:      DS.attr('boolean')
-  pullRequestTitle: DS.attr('string')
-  pullRequestNumber: DS.attr('number')
+  state:            Ember.attr('string')
+  number:           Ember.attr('number')
+  branch:           Ember.attr('string')
+  message:          Ember.attr('string')
+  _duration:        Ember.attr('number')
+  _config:          Ember.attr('object')
+  startedAt:        Ember.attr('string')
+  finishedAt:       Ember.attr('string')
+  pullRequest:      Ember.attr('boolean')
+  pullRequestTitle: Ember.attr('string')
+  pullRequestNumber: Ember.attr('number')
 
-  repo:   DS.belongsTo('Travis.Repo')
-  commit: DS.belongsTo('Travis.Commit')
-  jobs:   DS.hasMany('Travis.Job')
+#  repo:   DS.belongsTo('Travis.Repo')
+#  commit: DS.belongsTo('Travis.Commit')
+#  jobs:   DS.hasMany('Travis.Job')
 
   config: (->
     Travis.Helpers.compact(@get('_config'))

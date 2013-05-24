@@ -1,10 +1,10 @@
 require 'travis/model'
 
 @Travis.Sponsor = Travis.Model.extend
-  type:  DS.attr('string')
-  url:   DS.attr('string')
-  link:  DS.attr('string')
-  _image: DS.attr('string')
+  type:  Ember.attr('string')
+  url:   Ember.attr('string')
+  link:  Ember.attr('string')
+  _image: Ember.attr('string')
 
   image: (->
     "/images/sponsors/#{@get('_image')}"

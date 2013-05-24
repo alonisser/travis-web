@@ -28,6 +28,7 @@ Travis.ReposController = Ember.ArrayController.extend
   init: ->
     @_super.apply this, arguments
     Ember.run.later(@updateTimes.bind(this), Travis.INTERVALS.updateTimes)
+    Travis.Repo.withLastBuild()
 
   recentRepos: (->
     Travis.Repo.find()

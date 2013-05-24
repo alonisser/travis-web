@@ -1,10 +1,10 @@
 require 'travis/model'
 
 @Travis.Hook = Travis.Model.extend
-  name:        DS.attr('string')
-  ownerName:   DS.attr('string')
-  description: DS.attr('string')
-  active:      DS.attr('boolean')
+  name:        Ember.attr('string')
+  ownerName:   Ember.attr('string')
+  description: Ember.attr('string')
+  active:      Ember.attr('boolean')
 
   account: (->
     @get('slug').split('/')[0]

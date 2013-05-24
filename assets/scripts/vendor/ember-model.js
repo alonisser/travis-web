@@ -166,6 +166,8 @@ Ember.FilteredRecordArray = Ember.RecordArray.extend({
     var modelClass = get(this, 'modelClass');
     modelClass.registerRecordArray(this);
 
+    this.set('isLoaded', true);
+
     this.registerObservers();
     this.updateFilter();
   },

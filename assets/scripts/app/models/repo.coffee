@@ -2,16 +2,16 @@ require 'travis/expandable_record_array'
 require 'travis/model'
 
 @Travis.Repo = Travis.Model.extend
-  slug:                DS.attr('string')
-  description:         DS.attr('string')
-  lastBuildId:         DS.attr('number')
-  lastBuildNumber:     DS.attr('string')
-  lastBuildState:      DS.attr('string')
-  lastBuildStartedAt:  DS.attr('string')
-  lastBuildFinishedAt: DS.attr('string')
-  _lastBuildDuration:  DS.attr('number')
+  slug:                Ember.attr('string')
+  description:         Ember.attr('string')
+  lastBuildId:         Ember.attr('number')
+  lastBuildNumber:     Ember.attr('string')
+  lastBuildState:      Ember.attr('string')
+  lastBuildStartedAt:  Ember.attr('string')
+  lastBuildFinishedAt: Ember.attr('string')
+  _lastBuildDuration:  Ember.attr('number')
 
-  lastBuild: DS.belongsTo('Travis.Build')
+#  lastBuild: DS.belongsTo('Travis.Build')
 
   lastBuildHash: (->
     {
@@ -117,7 +117,12 @@ require 'travis/model'
     @find(search: query, orderBy: 'name')
 
   withLastBuild: ->
-    @filter( (repo) -> (!repo.get('incomplete') || repo.isAttributeLoaded('lastBuildId')) && repo.get('lastBuildId') )
+    Ember.FilteredRecordArray.create(
+      modelClass: Travis.Repo
+      filterFunction: (repo) -> console.log(repo+'', repo.get('lastBuildId')); repo.get('lastBuildId')
+      # (!repo.get('incomplete') || repo.isAttributeLoaded('lastBuildId'))
+      filterProperties: ['lastBuildId']
+    )
 
   bySlug: (slug) ->
     repo = $.select(@find().toArray(), (repo) -> repo.get('slug') == slug)

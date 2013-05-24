@@ -1,7 +1,15 @@
-@Travis.Model = DS.Model.extend
+@Travis.Model = Ember.Model.extend
+
   init: ->
     @loadedAttributes = []
     @_super.apply this, arguments
+
+  load: (id, hash) ->
+    newHash = {}
+    for key, value of hash
+      newHash[Ember.String.camelize(key)] = value
+
+    @_super(id, newHash)
 
   getAttr: (key, options) ->
     @needsCompletionCheck(key)
@@ -57,18 +65,6 @@
     @constructor.select(@get('id'))
 
 @Travis.Model.reopenClass
-  find: ->
-    if arguments.length == 0
-      Travis.store.findAll(this)
-    else
-      @_super.apply(this, arguments)
-
-  filter: (callback) ->
-    Travis.store.filter(this, callback)
-
-  load: (attrs) ->
-    Travis.store.load(this, attrs)
-
   select: (id) ->
     @find().forEach (record) ->
       record.set('selected', record.get('id') == id)
