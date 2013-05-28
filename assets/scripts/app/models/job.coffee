@@ -14,24 +14,19 @@ require 'travis/model'
   allowFailure:   Ember.attr('boolean')
 
   repositorySlug: Ember.attr('string')
-#  repo:   DS.belongsTo('Travis.Repo')
-#  build:  DS.belongsTo('Travis.Build')
-#  commit: DS.belongsTo('Travis.Commit')
-
-  # this is a fake relationship just to get rid
-  # of ember data's bug: https://github.com/emberjs/data/issues/758
-  # TODO: remove when this issue is fixed
-#  fakeBuild:  DS.belongsTo('Travis.Build')
+  repo:   Ember.belongsTo('Travis.Repo', key: 'repositoryId')
+  build:  Ember.belongsTo('Travis.Build')
+  commit: Ember.belongsTo('Travis.Commit')
 
   _config: Ember.attr('object')
 
-  repoSlugDidChange: (->
-    if slug = @get('repoSlug')
-      @get('store').loadIncomplete(Travis.Repo, {
-        id: @get('repoId'),
-        slug: slug
-      }, { skipIfExists: true })
-  ).observes('repoSlug')
+  #repoSlugDidChange: (->
+  #  if slug = @get('repoSlug')
+  #    @get('store').loadIncomplete(Travis.Repo, {
+  #      id: @get('repoId'),
+  #      slug: slug
+  #    }, { skipIfExists: true })
+  #).observes('repoSlug')
 
   log: ( ->
     @set('isLogAccessed', true)
@@ -118,16 +113,23 @@ require 'travis/model'
 @Travis.Job.reopenClass
   queued: (queue) ->
     @find()
-    Travis.store.filter this, (job) ->
-      queued = ['created', 'queued'].indexOf(job.get('state')) != -1
-      # TODO: why queue is sometimes just common instead of build.common?
-      queued && (!queue || job.get('queue') == "builds.#{queue}" || job.get('queue') == queue)
+    Ember.FilteredRecordArray.create(
+      modelClass: Travis.Job
+      filterFunction: (job) ->
+        queued = ['created', 'queued'].indexOf(job.get('state')) != -1
+        # TODO: why queue is sometimes just common instead of build.common?
+        queued && (!queue || job.get('queue') == "builds.#{queue}" || job.get('queue') == queue)
+
+      filterProperties: ['state', 'queue']
+    )
 
   running: ->
     @find(state: 'started')
-    Travis.store.filter this, (job) ->
-      job.get('state') == 'started'
+    Ember.FilteredRecordArray.create(
+      modelClass: Travis.Job
+      filterFunction: (job) ->
+        job.get('state') == 'started'
+      filterProperties: ['state']
+    )
 
-  findMany: (ids) ->
-    Travis.store.findMany this, ids
 

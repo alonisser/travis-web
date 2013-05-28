@@ -5,11 +5,11 @@ Travis.reopen
 
     init: ->
       @_super.apply this, arguments
-      @tickables = []
-      Travis.Ticker.create(target: this, interval: Travis.INTERVALS.sponsors)
+      #      @tickables = []
+      #Travis.Ticker.create(target: this, interval: Travis.INTERVALS.sponsors)
 
-    tick: ->
-      tickable.tick() for tickable in @tickables
+      #tick: ->
+      # tickable.tick() for tickable in @tickables
 
   QueuesController: Em.ArrayController.extend
     init: ->
@@ -80,7 +80,7 @@ Travis.DecksController = Travis.SponsorsController.extend
   init: ->
     @_super.apply this, arguments
 
-    @get('controllers.sidebar').tickables.push(this)
+    #@get('controllers.sidebar').tickables.push(this)
     @set 'content', Travis.Sponsor.decks()
 
 Travis.LinksController = Travis.SponsorsController.extend
@@ -90,5 +90,5 @@ Travis.LinksController = Travis.SponsorsController.extend
   init: ->
     @_super.apply this, arguments
 
-    @get('controllers.sidebar').tickables.push(this)
+    #@get('controllers.sidebar').tickables.push(this)
     @set 'content', Travis.Sponsor.links()

@@ -9,7 +9,7 @@ Travis.RepoController = Travis.Controller.extend
 
   init: ->
     @_super.apply this, arguments
-    Ember.run.later(@updateTimes.bind(this), Travis.INTERVALS.updateTimes)
+    setInterval(@updateTimes.bind(this), Travis.INTERVALS.updateTimes)
 
   updateTimes: ->
     if builds = @get('builds')
@@ -21,13 +21,12 @@ Travis.RepoController = Travis.Controller.extend
     if build && jobs = build.get('jobs')
       jobs.forEach (j) -> j.updateTimes()
 
-    Ember.run.later(@updateTimes.bind(this), Travis.INTERVALS.updateTimes)
-
   activate: (action) ->
     @_unbind()
     this["view#{$.camelize(action)}"]()
 
   viewIndex: ->
+    console.log 'bind repo'
     @_bind('repo', 'controllers.repos.firstObject')
     @_bind('build', 'repo.lastBuild')
     @connectTab('current')

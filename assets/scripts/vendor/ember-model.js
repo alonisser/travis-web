@@ -1,4 +1,4 @@
-// Last commit: 1eb476d (2013-05-20 18:58:30 -0600)
+// Last commit: 0224041 (2013-05-28 05:05:29 -0700)
 
 
 (function() {
@@ -166,8 +166,6 @@ Ember.FilteredRecordArray = Ember.RecordArray.extend({
     var modelClass = get(this, 'modelClass');
     modelClass.registerRecordArray(this);
 
-    this.set('isLoaded', true);
-
     this.registerObservers();
     this.updateFilter();
   },
@@ -231,7 +229,7 @@ function concatUnique(toArray, fromArray) {
   return toArray;
 }
 
-Ember.run.backburner.queueNames.push('data');
+Ember.run.queues.push('data');
 
 Ember.Model = Ember.Object.extend(Ember.Evented, Ember.DeferredMixin, {
   isLoaded: true,
@@ -358,7 +356,7 @@ Ember.Model.reopenClass({
   find: function(id) {
     if (!arguments.length) {
       return this.findAll();
-    } else if (Ember.typeOf(id) === 'array') {
+    } else if (Ember.isArray(id)) {
       return this.findMany(id);
     } else if (typeof id === 'object') {
       return this.findQuery(id);
@@ -368,6 +366,8 @@ Ember.Model.reopenClass({
   },
 
   findMany: function(ids) {
+    Ember.assert("findMany requires an array", Ember.isArray(ids));
+
     var records = Ember.RecordArray.create({_ids: ids});
 
     if (!this.recordArrays) { this.recordArrays = []; }
@@ -529,7 +529,8 @@ var get = Ember.get,
     set = Ember.set,
     meta = Ember.meta;
 
-Ember.attr = function(type) {
+Ember.attr = function(type, options) {
+  options = options || {};
   return Ember.computed(function(key, value) {
     var data = get(this, 'data'),
         dataValue = data && get(data, key),
@@ -561,8 +562,12 @@ Ember.attr = function(type) {
       return value;
     }
 
-    if (typeof dataValue === 'object') {
+    if (dataValue && typeof dataValue === 'object') {
       dataValue = Ember.create(dataValue);
+    }
+
+    if(options.transform) {
+      dataValue = options.transform.call(this, dataValue);
     }
     return dataValue;
   }).property('data').meta({isAttribute: true, type: type});
@@ -577,57 +582,92 @@ var get = Ember.get;
 Ember.RESTAdapter = Ember.Adapter.extend({
   find: function(record, id) {
     var url = this.buildURL(record.constructor, id),
-        rootKey = record.constructor.rootKey;
+        self = this;
 
     return this.ajax(url).then(function(data) {
-      var dataToLoad = rootKey ? data[rootKey] : data;
-      Ember.run(record, record.load, id, dataToLoad);
+      self.didFind.call(self, record, id, data);
     });
+  },
+
+  didFind: function(record, id, data) {
+    var rootKey = get(record.constructor, 'rootKey'),
+        dataToLoad = rootKey ? data[rootKey] : data;
+
+    Ember.run(record, record.load, id, dataToLoad);
   },
 
   findAll: function(klass, records) {
     var url = this.buildURL(klass),
-        collectionKey = klass.collectionKey;
+        self = this;
 
     return this.ajax(url).then(function(data) {
-      var dataToLoad = collectionKey ? data[collectionKey] : data;
-      Ember.run(records, records.load, klass, dataToLoad);
+      self.didFindAll.call(self, klass, records, data);
     });
+  },
+
+  didFindAll: function(klass, records, data) {
+    var collectionKey = get(klass, 'collectionKey'),
+        dataToLoad = collectionKey ? data[collectionKey] : data;
+
+    Ember.run(records, records.load, klass, dataToLoad);
   },
 
   findQuery: function(klass, records, params) {
-    var url = this.buildURL(klass);
+    var url = this.buildURL(klass),
+        self = this;
 
     return this.ajax(url, params).then(function(data) {
-      Ember.run(records, records.load, klass, data);
+      self.didFindQuery.call(self, klass, records, params, data);
     });
   },
 
+  didFindQuery: function(klass, records, params, data) {
+      var collectionKey = get(klass, 'collectionKey'),
+          dataToLoad = collectionKey ? data[collectionKey] : data;
+
+      Ember.run(records, records.load, klass, dataToLoad);
+  },
+
   createRecord: function(record) {
-    var url = this.buildURL(record.constructor);
+    var url = this.buildURL(record.constructor),
+        self = this;
 
     return this.ajax(url, record.toJSON(), "POST").then(function(data) {
-      Ember.run(function() {
-        record.load(data.id, data); // FIXME: hardcoded ID
-        record.didCreateRecord();
-      });
+      self.didCreateRecord.call(self, record, data);
+    });
+  },
+
+  didCreateRecord: function(record, data) {
+    Ember.run(function() {
+      record.load(data.id, data); // FIXME: hardcoded ID
+      record.didCreateRecord();
     });
   },
 
   saveRecord: function(record) {
-    var url = this.buildURL(record.constructor, get(record, 'id'));
+    var url = this.buildURL(record.constructor, get(record, 'id')),
+        self = this;
 
-    return this.ajax(url, record.toJSON(), "PUT").then(function() {  // TODO: Some APIs may or may not return data
-      Ember.run(record, record.didSaveRecord);
+    return this.ajax(url, record.toJSON(), "PUT").then(function(data) {  // TODO: Some APIs may or may not return data
+      self.didSaveRecord.call(self, record, data);
     });
   },
 
-  deleteRecord: function(record) {
-    var url = this.buildURL(record.constructor, get(record, 'id'));
+  didSaveRecord: function(record, data) {
+    Ember.run(record, record.didSaveRecord);
+  },
 
-    return this.ajax(url, record.toJSON(), "DELETE").then(function() {  // TODO: Some APIs may or may not return data
-      Ember.run(record, record.didDeleteRecord);
+  deleteRecord: function(record) {
+    var url = this.buildURL(record.constructor, get(record, 'id')),
+        self = this;
+
+    return this.ajax(url, record.toJSON(), "DELETE").then(function(data) {  // TODO: Some APIs may or may not return data
+      self.didDeleteRecord.call(self, record, data);
     });
+  },
+
+  didDeleteRecord: function(record, data) {
+    Ember.run(record, record.didDeleteRecord);
   },
 
   ajax: function(url, params, method) {

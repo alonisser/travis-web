@@ -12,4 +12,4 @@ require 'travis/model'
   committerEmail:    Ember.attr('string')
   pullRequestNumber: Ember.attr('number')
 
-#  build: DS.belongsTo('Travis.Build')
+  build: Ember.belongsTo('Travis.Build')

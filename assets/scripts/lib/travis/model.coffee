@@ -1,4 +1,38 @@
+get = Ember.get
+set = Ember.set
+
+Ember.belongsTo = (type, options) ->
+  options ||= {}
+
+  Ember.computed( (key, value) ->
+    if Ember.typeOf(type) == 'string'
+      type = get(Ember.lookup, type)
+
+    data = get(@, 'data')
+    key = options.key || type.singularName().camelize() + 'Id'
+    if data
+      type.find(get(data, key))
+  ).property('data').meta(isRelationship: true, type: type, relationshipType: 'belongsTo')
+
+Ember.hasMany = (type, options) ->
+  options ||= {}
+
+  Ember.computed( (key, value) ->
+    if Ember.typeOf(type) == 'string'
+      type = get(Ember.lookup, type)
+
+    data = get(@, 'data')
+    key = options.key || type.singularName().camelize() + 'Ids'
+
+    if data
+      ids = get(data, key) || []
+      ids.map (id) -> type.find(id)
+    else
+      []
+  ).property('data').meta(isRelationship: true, type: type, relationshipType: 'hasMany')
+
 @Travis.Model = Ember.Model.extend
+  id: Ember.attr('number')
 
   init: ->
     @loadedAttributes = []
@@ -83,7 +117,7 @@
     name.replace(/([A-Z])/g, '_$1').toLowerCase().slice(1)
 
   pluralName: ->
-    Travis.store.adapter.pluralize(@singularName())
+    @singularName() + 's'
 
   isAttribute: (name) ->
     Ember.get(this, 'attributes').has(name)
@@ -98,3 +132,19 @@
   isBelongsToRelationship: (name) ->
     if relationship = Ember.get(this, 'relationshipsByName').get(name)
       relationship.kind == 'belongsTo'
+
+  collectionKey: (->
+    @pluralName()
+  ).property()
+
+  rootKey: (->
+    @singularName()
+  ).property()
+
+  load: ->
+    console.log 'load', arguments
+    @_super.apply this, arguments
+
+  isModel: (->
+    true
+  ).property()

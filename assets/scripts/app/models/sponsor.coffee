@@ -4,11 +4,7 @@ require 'travis/model'
   type:  Ember.attr('string')
   url:   Ember.attr('string')
   link:  Ember.attr('string')
-  _image: Ember.attr('string')
-
-  image: (->
-    "/images/sponsors/#{@get('_image')}"
-  ).property('_image')
+  image: Ember.attr('string', transform: (image) -> "/images/sponsors/#{image}")
 
 Travis.Sponsor.reopenClass
   decks: ->
@@ -27,5 +23,9 @@ Travis.Sponsor.reopenClass
 
   byType: ->
     types = Array.prototype.slice.apply(arguments)
-    Travis.Sponsor.filter (sponsor) -> types.indexOf(sponsor.get('type')) != -1
+    Ember.FilteredRecordArray.create(
+      modelClass: Travis.Sponsor
+      filterFunction: (sponsor) -> types.indexOf(sponsor.get('type')) != -1
+      filterProperties: ['type']
+    )
 

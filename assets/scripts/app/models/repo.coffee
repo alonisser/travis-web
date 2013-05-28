@@ -2,6 +2,7 @@ require 'travis/expandable_record_array'
 require 'travis/model'
 
 @Travis.Repo = Travis.Model.extend
+  id:                  Ember.attr('string')
   slug:                Ember.attr('string')
   description:         Ember.attr('string')
   lastBuildId:         Ember.attr('number')
@@ -11,7 +12,7 @@ require 'travis/model'
   lastBuildFinishedAt: Ember.attr('string')
   _lastBuildDuration:  Ember.attr('number')
 
-#  lastBuild: DS.belongsTo('Travis.Build')
+  lastBuild: Ember.belongsTo('Travis.Build', key: 'lastBuildId')
 
   lastBuildHash: (->
     {
@@ -25,6 +26,7 @@ require 'travis/model'
     Travis.Build.find()
   ).property()
 
+  # TODO: this should not belong in the model
   builds: (->
     id = @get('id')
     builds = Travis.Build.byRepoId id, event_type: 'push'
@@ -33,7 +35,6 @@ require 'travis/model'
     array  = Travis.ExpandableRecordArray.create
       type: Travis.Build
       content: Ember.A([])
-      store: @get('store')
 
     array.load(builds)
 
@@ -49,7 +50,6 @@ require 'travis/model'
     array  = Travis.ExpandableRecordArray.create
       type: Travis.Build
       content: Ember.A([])
-      store: @get('store')
 
     array.load(builds)
 
@@ -117,12 +117,16 @@ require 'travis/model'
     @find(search: query, orderBy: 'name')
 
   withLastBuild: ->
-    Ember.FilteredRecordArray.create(
+    filtered = Ember.FilteredRecordArray.create(
       modelClass: Travis.Repo
-      filterFunction: (repo) -> console.log(repo+'', repo.get('lastBuildId')); repo.get('lastBuildId')
-      # (!repo.get('incomplete') || repo.isAttributeLoaded('lastBuildId'))
+      filterFunction: (repo) -> repo.get('lastBuildId')
       filterProperties: ['lastBuildId']
     )
+
+    Travis.Repo.findAll().then (array) ->
+      filtered.updateFilter()
+
+    filtered
 
   bySlug: (slug) ->
     repo = $.select(@find().toArray(), (repo) -> repo.get('slug') == slug)
@@ -130,5 +134,3 @@ require 'travis/model'
 
   # buildURL: (slug) ->
   #   if slug then slug else 'repos'
-
-

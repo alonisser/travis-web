@@ -1,38 +1,6 @@
 require 'travis/location'
 require 'travis/line_number_parser'
 
-Travis.DontSetupModelForControllerMixin = Ember.Mixin.create
-  # I've override setup to *not* set controller's model
-  # this can be remove when this patch will be merged https://github.com/emberjs/ember.js/pull/2044
-  # this will allow us to override setting up model for a controller
-  setup: (context) ->
-    isTop = undefined
-    unless @_redirected
-      isTop = true
-      @_redirected = []
-
-    @_checkingRedirect = true
-    depth = ++@_redirectDepth
-
-    if context is `undefined`
-      @redirect()
-    else
-      @redirect context
-
-    @_redirectDepth--
-    @_checkingRedirect = false
-
-    redirected = @_redirected
-
-    @_redirected = null  if isTop
-
-    return false  if redirected[depth]
-
-    controller = @controllerFor(@routeName, context)
-
-    @setupController controller, context
-    @renderTemplate controller, context
-
 Ember.Router.reopen
   location: (if testMode? then Ember.NoneLocation.create() else Travis.Location.create())
 
@@ -43,7 +11,10 @@ Ember.Router.reopen
     try
       @_super(url)
     catch error
-      @_super('/not-found') if error.message.match(/No route matched the URL/)
+      if error.message.match(/No route matched the URL/)
+        @_super('/not-found')
+      else
+        throw error
 
 # TODO: don't reopen Ember.Route to add events, there should be
 #       a better way (like "parent" resource for everything inside map)
@@ -116,15 +87,16 @@ Travis.ApplicationRoute = Ember.Route.extend Travis.LineNumberParser,
 
     this.controllerFor('repo').set('lineNumber', @fetchLineNumber())
 
-Travis.IndexCurrentRoute = Ember.Route.extend Travis.DontSetupModelForControllerMixin,
+Travis.IndexCurrentRoute = Ember.Route.extend
   renderTemplate: ->
     @render 'repo'
     @render 'build', outlet: 'pane', into: 'repo'
 
   setupController: ->
+    console.log 'index current route'
     @container.lookup('controller:repo').activate('index')
 
-Travis.AbstractBuildsRoute = Ember.Route.extend Travis.DontSetupModelForControllerMixin,
+Travis.AbstractBuildsRoute = Ember.Route.extend
   renderTemplate: ->
     @render 'builds', outlet: 'pane', into: 'repo'
 
@@ -135,7 +107,7 @@ Travis.BuildsRoute = Travis.AbstractBuildsRoute.extend(contentType: 'builds')
 Travis.PullRequestsRoute = Travis.AbstractBuildsRoute.extend(contentType: 'pull_requests')
 Travis.BranchesRoute = Travis.AbstractBuildsRoute.extend(contentType: 'branches')
 
-Travis.BuildRoute = Ember.Route.extend Travis.DontSetupModelForControllerMixin,
+Travis.BuildRoute = Ember.Route.extend
   renderTemplate: ->
     @render 'build', outlet: 'pane', into: 'repo'
 
@@ -151,7 +123,7 @@ Travis.BuildRoute = Ember.Route.extend Travis.DontSetupModelForControllerMixin,
     repo.set('build', model)
     repo.activate('build')
 
-Travis.JobRoute = Ember.Route.extend Travis.DontSetupModelForControllerMixin,
+Travis.JobRoute = Ember.Route.extend
   renderTemplate: ->
     @render 'job', outlet: 'pane', into: 'repo'
 
@@ -167,14 +139,14 @@ Travis.JobRoute = Ember.Route.extend Travis.DontSetupModelForControllerMixin,
     repo.set('job', model)
     repo.activate('job')
 
-Travis.RepoIndexRoute = Ember.Route.extend Travis.DontSetupModelForControllerMixin,
+Travis.RepoIndexRoute = Ember.Route.extend
   setupController: (controller, model) ->
     @container.lookup('controller:repo').activate('current')
 
   renderTemplate: ->
     @render 'build', outlet: 'pane', into: 'repo'
 
-Travis.RepoRoute = Ember.Route.extend Travis.DontSetupModelForControllerMixin,
+Travis.RepoRoute = Ember.Route.extend
   renderTemplate: ->
     @render 'repo'
 
@@ -222,7 +194,6 @@ Travis.IndexRoute = Ember.Route.extend
     @render 'repos',   outlet: 'left'
     @render 'sidebar', outlet: 'right'
     @render 'top',     outlet: 'top'
-    @render 'flash',   outlet: 'flash'
 
   setupController: (controller)->
     @container.lookup('controller:repos').activate()
@@ -260,7 +231,6 @@ Travis.ProfileRoute = Ember.Route.extend
 
     @render 'top', outlet: 'top'
     @render 'accounts', outlet: 'left'
-    @render 'flash', outlet: 'flash'
     @render 'profile'
 
 Travis.ProfileIndexRoute = Ember.Route.extend

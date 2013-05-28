@@ -17,9 +17,9 @@ require 'travis/model'
   pullRequestTitle: Ember.attr('string')
   pullRequestNumber: Ember.attr('number')
 
-#  repo:   DS.belongsTo('Travis.Repo')
-#  commit: DS.belongsTo('Travis.Commit')
-#  jobs:   DS.hasMany('Travis.Job')
+  repo:   Ember.belongsTo('Travis.Repo', key: 'repositoryId')
+  commit: Ember.belongsTo('Travis.Commit')
+  jobs:   Ember.hasMany('Travis.Job')
 
   config: (->
     Travis.Helpers.compact(@get('_config'))

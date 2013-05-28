@@ -12,7 +12,7 @@ require 'travis/model'
   startedAt:    Ember.attr('string')
   finishedAt:   Ember.attr('string')
 
-#  commit: DS.belongsTo('Travis.Commit')
+  commit: Ember.belongsTo('Travis.Commit')
 
   repo: (->
     Travis.Repo.find @get('repoId')  if @get('repoId')

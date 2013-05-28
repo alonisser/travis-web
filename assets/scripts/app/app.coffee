@@ -4,14 +4,70 @@ Adapter = Ember.RESTAdapter.extend
 
 unless window.TravisApplication
   window.TravisApplication = Em.Application.extend(Ember.Evented,
-    LOG_TRANSITIONS: true
     authStateBinding: 'auth.state'
     signedIn: (-> @get('authState') == 'signed-in' ).property('authState')
 
     setup: ->
-      modelClasses = [Travis.User, Travis.Build, Travis.Job, Travis.Repo]
+      modelClasses = [Travis.User, Travis.Build, Travis.Job, Travis.Repo, Travis.Commit, Travis.Worker, Travis.Account, Travis.Broadcast]
       modelClasses.forEach (klass) ->
-        klass.adapter = Adapter.create()
+        klass.adapter = Adapter.extend(
+          findMany: (klass, records, ids) ->
+            debugger
+            console.log 'findMany', klass+'', records+'', ids
+
+          mappings:
+            broadcasts:   Travis.Broadcast
+            repositories: Travis.Repo
+            repository:   Travis.Repo
+            repos:        Travis.Repo
+            repo:         Travis.Repo
+            builds:       Travis.Build
+            build:        Travis.Build
+            commits:      Travis.Commit
+            commit:       Travis.Commit
+            jobs:         Travis.Job
+            job:          Travis.Job
+            account:      Travis.Account
+            accounts:     Travis.Account
+            worker:       Travis.Worker
+            workers:      Travis.Worker
+
+          buildURL: ->
+            @_super.apply(this, arguments).replace(/\.json$/, '')
+
+          didFind: (record, id, data) ->
+            @sideload(record.constructor, data)
+            @_super(record, id, data)
+
+          didFindAll: (klass, records, data) ->
+            @sideload(klass, data)
+            @_super(klass, records, data)
+
+          didFindQuery: (klass, records, params, data) ->
+            @sideload(klass, data)
+            @_super(klass, records, params, data)
+
+          didCreateRecord: (record, data) ->
+            @sideload(record.constructor, data)
+            @_super(record, data)
+
+          didSaveRecord: (record, data) ->
+            @sideload(record.constructor, data)
+            @_super(record, data)
+
+          didDeleteRecord: (record, data) ->
+            @sideload(record.constructor, data)
+            @_super(record, data)
+
+          sideload: (klass, data) ->
+            for name, records of data
+              records = [records] unless Ember.isArray(records)
+
+              # we need to skip records of type, which is loaded by adapter already
+              if (type = @mappings[name]) != klass
+                for record in records
+                  type.findFromCacheOrLoad(record)
+        ).create()
 
       Travis.User.url = '/users'
       Travis.Build.url = '/builds'
@@ -19,8 +75,9 @@ unless window.TravisApplication
       Travis.Repo.url = '/repos'
       Travis.Build.url = '/builds'
 
-      # TODO: fix
-      #@store.loadMany(Travis.Sponsor, Travis.SPONSORS)
+
+      Travis.SPONSORS.forEach (sponsor) ->
+        Travis.Sponsor.findFromCacheOrLoad(sponsor)
 
       @slider = new Travis.Slider()
       @pusher = new Travis.Pusher(Travis.config.pusher_key) if Travis.config.pusher_key
